@@ -3,11 +3,11 @@
 
   (list
 
-   ;; Preprocessor
-   '("\\.[[:alpha:]]+" . font-lock-keyword-face)
-
    ;; Comments
    '("\\;.*" . font-lock-comment-face)
+
+   ;; Preprocessor
+   '("\\.[[:alpha:]]+" . font-lock-keyword-face)
 
    ;; Assembly address
    '("^\\(\\*=\\)\\(\\$[0-9a-fA-F]+\\)"
@@ -52,21 +52,23 @@
 
 (defun paw64-resolve-instr-indent ()
   "Resolve indentation level for instruction/opcode column by looking at previous lines, otherwise use ‘paw64-indent-level’"
+  (save-excursion
     (let ((col (re-search-backward paw64-6502-opcode-regex)))
       (if (integerp col)
-          (save-excursion
+          (progn
             (goto-char col)
             (current-column))
-        paw64-indent-level)))
+      paw64-indent-level))))
 
 (defun paw64-resolve-comment-indent()
   "Resolve indentation level for comment column by looking at previous lines, otherwise use ‘paw64-indent-level’"
-  (let ((col (re-search-backward ";")))
+  (save-excursion
+    (let ((col (re-search-backward ";")))
       (if (integerp col)
-          (save-excursion
+          (progn
             (goto-char col)
             (current-column))
-        paw64-comment-indent-level)))
+        paw64-comment-indent-level))))
 
 (defun paw64-indent ()
   "The ‘indent-line-function’ of paw64-mode. Delegates to either ‘paw64-indent-line’ or ‘paw64-indent-at-cursor’ depending on context."
@@ -111,8 +113,22 @@
   (if (looking-at paw64-6502-opcode-regex)
       (indent-to (paw64-resolve-instr-indent))))
 
-(define-derived-mode paw64-mode fundamental-mode
+(defun paw64-target-name ()
+  (concat (car (split-string buffer-file-name "\\.")) ".prg"))
+
+(defun paw64-compile-64tass ()
+  (interactive)
+  (call-process "64tass" nil "*64tass compilation log*" nil buffer-file-name "-o" (paw64-target-name)))
+
+(defvar paw64-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-c") 'paw64-compile-64tass)
+    map))
+
+(define-derived-mode paw64-mode
+  fundamental-mode
   "Paw64"
+  "Major mode for 6502/6510 assembly with 65tass and/or paw64"
   (set (make-local-variable 'font-lock-defaults) '(paw64-font-lock-keywords))
   (set (make-local-variable 'indent-line-function) 'paw64-indent))
 
