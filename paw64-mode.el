@@ -117,12 +117,20 @@
   (concat (car (split-string buffer-file-name "\\.")) ".prg"))
 
 (defun paw64-compile-64tass ()
+  "Compile/Assemble current buffer using 64tass. Result will be stored in a file named after the buffer, with the file extension .prg"
+  (interactive
+   (call-process "64tass" nil "*64tass compilation log*" nil buffer-file-name "-o" (paw64-target-name))))
+
+(defun paw64-compile-and-run-64tass ()
+  "Assembles current buffer using ‘paw64-compile-64tass’ and runs the resulting binary in VICE/x64"
   (interactive)
-  (call-process "64tass" nil "*64tass compilation log*" nil buffer-file-name "-o" (paw64-target-name)))
+  (paw64-compile-64tass)
+  (call-process "x64" nil 0 nil (paw64-target-name)))
 
 (defvar paw64-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") 'paw64-compile-64tass)
+    (define-key map (kbd "C-c C-x") 'paw64-compile-and-run-64tass)
     map))
 
 (define-derived-mode paw64-mode
