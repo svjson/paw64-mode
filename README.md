@@ -11,6 +11,7 @@ This mode is in early stages of development.
 
 | Binding | Command                              | Description                                                                                                     |
 | ------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| C-c C-b | Insert Basic Header                  | Insert minimal basic program at $0801 to start program with SYS.                                                |
 | C-c C-c | Assemble current buffer using 64tass | Assemble current buffer (ie, myprogram.asm) to disk (ie, myprogram.prg) in the same folder as the source buffer |
 | C-C C-x | Assemble(64tass) and run (x64)       | Assemble current buffer and launch resulting binary in VICE(x64)                                                |
 

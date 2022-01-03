@@ -1,4 +1,12 @@
 
+(defcustom paw64-indent-level 16
+  "Default level of indentation for assembly instructions(opcodes)"
+  :type 'integer)
+
+(defcustom paw64-comment-indent-level 30
+  "Default level of comment/documentation column"
+  :type 'integer)
+
 (defconst paw64-font-lock-keywords
 
   (list
@@ -38,15 +46,6 @@
 
    ;; Highlight opcodes with optimized regexp for all valid 6502/6510 opcodes, including illegal/undocumented opcodes
    '("\\<\\(a\\(?:dc\\|n[cde]\\|rr\\|s[lr]\\)\\|b\\(?:c[cs]\\|eq\\|it\\|mi\\|ne\\|pl\\|rk\\|v[cs]\\)\\|c\\(?:l[cdiv]\\|mp\\|p[xy]\\)\\|d\\(?:cp\\|e[cxy]\\)\\|eor\\|i\\(?:n[cxy]\\|sb\\)\\|j\\(?:am\\|mp\\|sr\\)\\|l\\(?:ax\\|d[asxy]\\|sr\\)\\|nop\\|ora\\|p\\(?:h[ap]\\|l[ap]\\)\\|r\\(?:la\\|o[lr]\\|ra\\|t[is]\\)\\|s\\(?:ax\\|b[cx]\\|e[cdi]\\|h[asxy]\\|lo\\|re\\|t[axy]\\)\\|t\\(?:a[xy]\\|sx\\|x[as]\\|ya\\)\\)\\>" . font-lock-keyword-face)))
-
-
-(defcustom paw64-indent-level 16
-  "Default level of indentation for assembly instructions(opcodes)"
-  :type 'integer)
-
-(defcustom paw64-comment-indent-level 30
-  "Default level of comment/documentation column"
-  :type 'integer)
 
 (defconst paw64-6502-opcode-regex "\\<\\(a\\(?:dc\\|n[cde]\\|rr\\|s[lr]\\)\\|b\\(?:c[cs]\\|eq\\|it\\|mi\\|ne\\|pl\\|rk\\|v[cs]\\)\\|c\\(?:l[cdiv]\\|mp\\|p[xy]\\)\\|d\\(?:cp\\|e[cxy]\\)\\|eor\\|i\\(?:n[cxy]\\|sb\\)\\|j\\(?:am\\|mp\\|sr\\)\\|l\\(?:ax\\|d[asxy]\\|sr\\)\\|nop\\|ora\\|p\\(?:h[ap]\\|l[ap]\\)\\|r\\(?:la\\|o[lr]\\|ra\\|t[is]\\)\\|s\\(?:ax\\|b[cx]\\|e[cdi]\\|h[asxy]\\|lo\\|re\\|t[axy]\\)\\|t\\(?:a[xy]\\|sx\\|x[as]\\|ya\\)\\)\\>")
 
@@ -113,6 +112,30 @@
   (if (looking-at paw64-6502-opcode-regex)
       (indent-to (paw64-resolve-instr-indent))))
 
+(defun paw64-to-decimal-string (input)
+  "Converts string representation of hexadecimal number to a string containing its corresponding integer value."
+  (let ((hex (string-match "\\$[[:digit:]]+" input))
+        (dec (string-match "[[:digit:]]+" input)))
+    (if (= dec 0)
+        input
+      (number-to-string (string-to-number (substring input 1) 16)))))
+
+(defun paw64-insert-basic-header ()
+  "Inserts a basic program to bootstrap machine language program at cursor."
+  (interactive)
+  (let ((prog-addr (paw64-to-decimal-string (string-trim (read-string "Enter program start address: ")))))
+    (insert "*=$0801")
+    (newline-and-indent)
+    (insert ".byte $0c, $08, $0a, $00, $9e, $20")
+    (newline-and-indent)
+    (insert (concat ".byte " (let ((nums ()))
+                               (dotimes (i (length prog-addr))
+                                 (push (concat "$3" (substring prog-addr i (+ i 1))) nums))
+                               (dotimes (i (- 7 (length prog-addr)))
+                                 (push "$00" nums))
+                               (string-join (nreverse nums) ", "))))
+    (newline-and-indent)))
+
 (defun paw64-target-name ()
   (concat (car (split-string buffer-file-name "\\.")) ".prg"))
 
@@ -131,6 +154,7 @@
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") 'paw64-compile-64tass)
     (define-key map (kbd "C-c C-x") 'paw64-compile-and-run-64tass)
+    (define-key map (kbd "C-c C-b") 'paw64-insert-basic-header)
     map))
 
 (define-derived-mode paw64-mode
