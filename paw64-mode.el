@@ -7,47 +7,58 @@
   "Default level of comment/documentation column"
   :type 'integer)
 
+
+
+(defconst paw64-6502-opcode-list '("adc" "anc" "and" "ane" "arr" "asl" "asr" "bcc" "bcs" "beq" "bit" "bmi" "bne"
+                                   "bpl" "brk" "bvc" "bvs" "clc" "cld" "cli" "clv" "cmp" "cpx" "cpy" "dcp" "dec"
+                                   "dex" "dey" "eor" "inc" "inx" "iny" "isb" "jam" "jmp" "jsr" "lax" "lda" "lds"
+                                   "ldx" "ldy" "lsr" "nop" "ora" "pha" "php" "pla" "plp" "rla" "rol" "ror" "rra"
+                                   "rti" "rts" "sax" "sbc" "sbx" "sec" "sed" "sei" "sha" "shs" "shx" "shy" "slo"
+                                   "sre" "sta" "stx" "sty" "tax" "tay" "tsx" "txa" "txs" "tya"))
+
+
+
+(defconst paw64-6502-opcode-regex "\\<\\(a\\(?:dc\\|n[cde]\\|rr\\|s[lr]\\)\\|b\\(?:c[cs]\\|eq\\|it\\|mi\\|ne\\|pl\\|rk\\|v[cs]\\)\\|c\\(?:l[cdiv]\\|mp\\|p[xy]\\)\\|d\\(?:cp\\|e[cxy]\\)\\|eor\\|i\\(?:n[cxy]\\|sb\\)\\|j\\(?:am\\|mp\\|sr\\)\\|l\\(?:ax\\|d[asxy]\\|sr\\)\\|nop\\|ora\\|p\\(?:h[ap]\\|l[ap]\\)\\|r\\(?:la\\|o[lr]\\|ra\\|t[is]\\)\\|s\\(?:ax\\|b[cx]\\|e[cdi]\\|h[asxy]\\|lo\\|re\\|t[axy]\\)\\|t\\(?:a[xy]\\|sx\\|x[as]\\|ya\\)\\)\\>")
+
+
+
 (defconst paw64-font-lock-keywords
+  '(("\\;.*" . font-lock-comment-face)
 
-  (list
+    ;; Preprocessor
+    ("\\.[[:alpha:]]+" . font-lock-keyword-face)
 
-   ;; Comments
-   '("\\;.*" . font-lock-comment-face)
-
-   ;; Preprocessor
-   '("\\.[[:alpha:]]+" . font-lock-keyword-face)
-
-   ;; Assembly address
-   '("^\\(\\*=\\)\\(\\$[0-9a-fA-F]+\\)"
+    ;; Assembly address
+    ("^\\(\\*=\\)\\(\\$[0-9a-fA-F]+\\)"
      (1 font-lock-constant-face)
      (2 font-lock-function-name-face))
 
-   ;; Constant declaration
-   '("^\\(?:[[:alnum:]]\\|_\\)+" . font-lock-function-name-face)
+    ;; Constant declaration
+    ("^\\(?:[[:alnum:]]\\|_\\)+" . font-lock-function-name-face)
 
-   ;; Hi/Lo ref
-   '("\\#[\\>\\<][a-zA-Z_][a-zA-Z0-9_]*" . font-lock-function-name-face)
+    ;; Hi/Lo ref
+    ("\\#[\\>\\<][a-zA-Z_][a-zA-Z0-9_]*" . font-lock-function-name-face)
 
-   ;; Constant hex value
-   '("=" "\\$[0-9a-fA-F]+" nil nil (0 'bold))
+    ;; Constant hex value
+    ("=" "\\$[0-9a-fA-F]+" nil nil (0 'bold))
 
-   ;; Opcode argument value
-   '("[[:blank:]]+[a-z]\\{3\\}\\>" "\\#[\\$\\%]\\(?:[0-9a-fA-F]+\\)" nil nil (0 'bold))
+    ;; Opcode argument value
+    ("[[:blank:]]+[a-z]\\{3\\}\\>" "\\#[\\$\\%]\\(?:[0-9a-fA-F]+\\)" nil nil (0 'bold))
 
-   ;; Opcode argument address
-   '("[[:blank:]]+[a-z]\\{3\\}\\>" "\\$\\(?:[0-9a-fA-F]+\\)" nil nil (0 'font-lock-variable-name-face))
+    ;; Opcode argument address
+    ("[[:blank:]]+[a-z]\\{3\\}\\>" "\\$\\(?:[0-9a-fA-F]+\\)" nil nil (0 'font-lock-variable-name-face))
 
-   ;; Opcode argument label/constant
-   '("[[:blank:]]+[a-z]\\{3\\}\\>" "[[:blank:]]+\\([a-zA-Z_][a-zA-Z0-9_]*\\)" nil nil (0 'font-lock-preprocessor-face))
+    ;; Opcode argument label/constant
+    ("[[:blank:]]+[a-z]\\{3\\}\\>" "[[:blank:]]+\\([a-zA-Z_][a-zA-Z0-9_]*\\)" nil nil (0 'font-lock-preprocessor-face))
 
-   ;; Opcode register arg
-   '("\\([a-z]\\{3\\}[[:space:]]\\).*\\,[[:space:]]?\\([xy]\\)"
+    ;; Opcode register arg
+    ("\\([a-z]\\{3\\}[[:space:]]\\).*\\,[[:space:]]?\\([xy]\\)"
      (2 'font-lock-builtin-face))
 
-   ;; Highlight opcodes with optimized regexp for all valid 6502/6510 opcodes, including illegal/undocumented opcodes
-   '("\\<\\(a\\(?:dc\\|n[cde]\\|rr\\|s[lr]\\)\\|b\\(?:c[cs]\\|eq\\|it\\|mi\\|ne\\|pl\\|rk\\|v[cs]\\)\\|c\\(?:l[cdiv]\\|mp\\|p[xy]\\)\\|d\\(?:cp\\|e[cxy]\\)\\|eor\\|i\\(?:n[cxy]\\|sb\\)\\|j\\(?:am\\|mp\\|sr\\)\\|l\\(?:ax\\|d[asxy]\\|sr\\)\\|nop\\|ora\\|p\\(?:h[ap]\\|l[ap]\\)\\|r\\(?:la\\|o[lr]\\|ra\\|t[is]\\)\\|s\\(?:ax\\|b[cx]\\|e[cdi]\\|h[asxy]\\|lo\\|re\\|t[axy]\\)\\|t\\(?:a[xy]\\|sx\\|x[as]\\|ya\\)\\)\\>" . font-lock-keyword-face)))
+    ;; Highlight opcodes with optimized regexp for all valid 6502/6510 opcodes, including illegal/undocumented opcodes
+    (list paw64-6502-opcode-regex 9 font-lock-keyword-face)))
 
-(defconst paw64-6502-opcode-regex "\\<\\(a\\(?:dc\\|n[cde]\\|rr\\|s[lr]\\)\\|b\\(?:c[cs]\\|eq\\|it\\|mi\\|ne\\|pl\\|rk\\|v[cs]\\)\\|c\\(?:l[cdiv]\\|mp\\|p[xy]\\)\\|d\\(?:cp\\|e[cxy]\\)\\|eor\\|i\\(?:n[cxy]\\|sb\\)\\|j\\(?:am\\|mp\\|sr\\)\\|l\\(?:ax\\|d[asxy]\\|sr\\)\\|nop\\|ora\\|p\\(?:h[ap]\\|l[ap]\\)\\|r\\(?:la\\|o[lr]\\|ra\\|t[is]\\)\\|s\\(?:ax\\|b[cx]\\|e[cdi]\\|h[asxy]\\|lo\\|re\\|t[axy]\\)\\|t\\(?:a[xy]\\|sx\\|x[as]\\|ya\\)\\)\\>")
+
 
 (defun paw64-resolve-instr-indent ()
   "Resolve indentation level for instruction/opcode column by looking at previous lines, otherwise use ‘paw64-indent-level’"
@@ -120,6 +131,8 @@
           (and (bolp) (eolp)))
       (indent-to (paw64-resolve-instr-indent))))
 
+
+
 (defun paw64-to-decimal-string (input)
   "Converts string representation of hexadecimal number to a string containing its corresponding integer value."
   (let ((hex (string-match "\\$[[:digit:]]+" input))
@@ -144,6 +157,8 @@
                                (string-join (nreverse nums) ", "))))
     (newline-and-indent)))
 
+
+
 (defun paw64-target-name ()
   (concat (car (split-string buffer-file-name "\\.")) ".prg"))
 
@@ -157,6 +172,8 @@
   (interactive)
   (paw64-compile-64tass)
   (call-process "x64" nil 0 nil (paw64-target-name)))
+
+
 
 (defvar paw64-mode-map
   (let ((map (make-sparse-keymap)))
