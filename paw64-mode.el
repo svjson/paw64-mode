@@ -16,14 +16,14 @@
                                    "rti" "rts" "sax" "sbc" "sbx" "sec" "sed" "sei" "sha" "shs" "shx" "shy" "slo"
                                    "sre" "sta" "stx" "sty" "tax" "tay" "tsx" "txa" "txs" "tya"))
 
+(defconst paw64-6502-opcode-regex (concat "\\<" (regexp-opt paw64-6502-opcode-list) "\\>"))
 
-
-(defconst paw64-6502-opcode-regex "\\<\\(a\\(?:dc\\|n[cde]\\|rr\\|s[lr]\\)\\|b\\(?:c[cs]\\|eq\\|it\\|mi\\|ne\\|pl\\|rk\\|v[cs]\\)\\|c\\(?:l[cdiv]\\|mp\\|p[xy]\\)\\|d\\(?:cp\\|e[cxy]\\)\\|eor\\|i\\(?:n[cxy]\\|sb\\)\\|j\\(?:am\\|mp\\|sr\\)\\|l\\(?:ax\\|d[asxy]\\|sr\\)\\|nop\\|ora\\|p\\(?:h[ap]\\|l[ap]\\)\\|r\\(?:la\\|o[lr]\\|ra\\|t[is]\\)\\|s\\(?:ax\\|b[cx]\\|e[cdi]\\|h[asxy]\\|lo\\|re\\|t[axy]\\)\\|t\\(?:a[xy]\\|sx\\|x[as]\\|ya\\)\\)\\>")
+(defconst paw64-symbol-regex "[a-zA-Z_][a-zA-Z0-9_]*")
 
 
 
 (defconst paw64-font-lock-keywords
-  '(("\\;.*" . font-lock-comment-face)
+  `(("\\;.*" . font-lock-comment-face)
 
     ;; Preprocessor
     ("\\.[[:alpha:]]+" . font-lock-keyword-face)
@@ -34,29 +34,34 @@
      (2 font-lock-function-name-face))
 
     ;; Constant declaration
-    ("^\\(?:[[:alnum:]]\\|_\\)+" . font-lock-function-name-face)
+    (,(concat "^\\(" paw64-symbol-regex "\\)[[:blank:]]*=") 1 font-lock-function-name-face)
+
+    ;; Label declaration
+    (,(concat "^\\(" paw64-symbol-regex "\\)\\(:?\\)\\>")
+     (1 font-lock-type-face)
+     (2 'bold))
 
     ;; Hi/Lo ref
-    ("\\#[\\>\\<][a-zA-Z_][a-zA-Z0-9_]*" . font-lock-function-name-face)
+    (,(concat "\\#[\\>\\<]" paw64-symbol-regex) . font-lock-function-name-face)
 
     ;; Constant hex value
     ("=" "\\$[0-9a-fA-F]+" nil nil (0 'bold))
 
     ;; Opcode argument value
-    ("[[:blank:]]+[a-z]\\{3\\}\\>" "\\#[\\$\\%]\\(?:[0-9a-fA-F]+\\)" nil nil (0 'bold))
+    (,paw64-6502-opcode-regex "\\#[\\$\\%]\\(?:[0-9a-fA-F]+\\)" nil nil (0 'bold))
 
     ;; Opcode argument address
-    ("[[:blank:]]+[a-z]\\{3\\}\\>" "\\$\\(?:[0-9a-fA-F]+\\)" nil nil (0 'font-lock-variable-name-face))
+    (,paw64-6502-opcode-regex "\\$\\(?:[0-9a-fA-F]+\\)" nil nil (0 'font-lock-variable-name-face))
 
     ;; Opcode argument label/constant
-    ("[[:blank:]]+[a-z]\\{3\\}\\>" "[[:blank:]]+\\([a-zA-Z_][a-zA-Z0-9_]*\\)" nil nil (0 'font-lock-preprocessor-face))
+    (,paw64-6502-opcode-regex "[[:blank:]]+\\([a-zA-Z_][a-zA-Z0-9_]*\\)" nil nil (0 'font-lock-preprocessor-face))
 
     ;; Opcode register arg
-    ("\\([a-z]\\{3\\}[[:space:]]\\).*\\,[[:space:]]?\\([xy]\\)"
-     (2 'font-lock-builtin-face))
+    (,(concat "\\(" paw64-6502-opcode-regex "\\).*\\,[[:space:]]?\\([xy]\\)")
+     (2 'bold))
 
     ;; Highlight opcodes with optimized regexp for all valid 6502/6510 opcodes, including illegal/undocumented opcodes
-    (list paw64-6502-opcode-regex 9 font-lock-keyword-face)))
+    (,paw64-6502-opcode-regex 0 font-lock-keyword-face)))
 
 
 
@@ -185,7 +190,7 @@
 (define-derived-mode paw64-mode
   fundamental-mode
   "Paw64"
-  "Major mode for 6502/6510 assembly with 65tass and/or paw64"
+  "Major mode for 6502/6510 assembly with 64tass and/or paw64"
   (set (make-local-variable 'font-lock-defaults) '(paw64-font-lock-keywords))
   (set (make-local-variable 'indent-line-function) 'paw64-indent))
 
