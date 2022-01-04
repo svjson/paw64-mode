@@ -54,7 +54,7 @@
     (,paw64-6502-opcode-regex "\\$\\(?:[0-9a-fA-F]+\\)" nil nil (0 'font-lock-variable-name-face))
 
     ;; Opcode argument label/constant
-    (,paw64-6502-opcode-regex "[[:blank:]]+\\([a-zA-Z_][a-zA-Z0-9_]*\\)" nil nil (0 'font-lock-preprocessor-face))
+    (,paw64-6502-opcode-regex ,(concat "[[:blank:]]+\\(" paw64-symbol-regex "\\)") nil nil (0 'font-lock-preprocessor-face))
 
     ;; Opcode register arg
     (,(concat "\\(" paw64-6502-opcode-regex "\\).*\\,[[:space:]]?\\([xy]\\)")
@@ -77,20 +77,27 @@
 
 (defun paw64-resolve-comment-indent()
   "Resolve indentation level for comment column by looking at previous lines, otherwise use ‘paw64-indent-level’"
-  (save-excursion
-    (let ((col (re-search-backward ";" nil t)))
-      (if (integerp col)
-          (progn
-            (goto-char col)
-            (current-column))
-        paw64-comment-indent-level))))
+  (let ((instr-col (paw64-resolve-instr-indent)))
+    (save-excursion
+      ;; Find comment start that is right of instruction column
+      (let ((col (re-search-backward (concat "^\\(?:[^;]\\{" (int-to-string instr-col) ",\\}\\);") (beginning-of-line) t)))
+        (if (integerp col)
+            (progn
+              ;; Find comment start character column
+              (goto-char col)
+              (beginning-of-line)
+              (forward-char instr-col)
+              (goto-char (re-search-forward ";"))
+              (backward-char)
+              (current-column))
+          paw64-comment-indent-level)))))
 
 (defun paw64-indent ()
   "The ‘indent-line-function’ of paw64-mode. Delegates to either ‘paw64-indent-line’ or ‘paw64-indent-at-cursor’ depending on context."
   (interactive)
   (if (and (not (bolp))
            (looking-at ";")
-           (and (= (current-column) paw64-comment-indent-level)))
+           (and (= (current-column) (paw64-resolve-comment-indent))))
       (progn
         (paw64-eat-ws)
         (if (not (bolp))
