@@ -95,10 +95,17 @@
 
 (defun paw64-indent-at-cursor ()
   "Indents the remainder of the line from the current cursor column"
-  (if (looking-at "[[:blank:]]*;")
+  (if (or (looking-at "[[:blank:]]*;")
+          (and (eolp)
+               (> (current-column) (paw64-resolve-instr-indent))))
       (progn
         (paw64-eat-ws)
-        (indent-to (paw64-resolve-comment-indent)))))
+        (indent-to (paw64-resolve-comment-indent))))
+  (if (looking-back "^\\(?:[[:alnum:]]\\|_\\)+[[:blank:]]*")
+      (progn
+        (paw64-eat-ws)
+        (indent-to (paw64-resolve-instr-indent)))))
+
 
 (defun paw64-indent-line ()
   "Indent current line"
@@ -109,7 +116,8 @@
   (paw64-eat-ws)
   (if (looking-at ";")
       (indent-to (paw64-resolve-comment-indent)))
-  (if (looking-at paw64-6502-opcode-regex)
+  (if (or (looking-at paw64-6502-opcode-regex)
+          (and (bolp) (eolp)))
       (indent-to (paw64-resolve-instr-indent))))
 
 (defun paw64-to-decimal-string (input)
