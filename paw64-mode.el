@@ -52,7 +52,7 @@
 (defun paw64-resolve-instr-indent ()
   "Resolve indentation level for instruction/opcode column by looking at previous lines, otherwise use ‘paw64-indent-level’"
   (save-excursion
-    (let ((col (re-search-backward paw64-6502-opcode-regex)))
+    (let ((col (re-search-backward paw64-6502-opcode-regex nil t)))
       (if (integerp col)
           (progn
             (goto-char col)
@@ -62,7 +62,7 @@
 (defun paw64-resolve-comment-indent()
   "Resolve indentation level for comment column by looking at previous lines, otherwise use ‘paw64-indent-level’"
   (save-excursion
-    (let ((col (re-search-backward ";")))
+    (let ((col (re-search-backward ";" nil t)))
       (if (integerp col)
           (progn
             (goto-char col)
@@ -141,8 +141,8 @@
 
 (defun paw64-compile-64tass ()
   "Compile/Assemble current buffer using 64tass. Result will be stored in a file named after the buffer, with the file extension .prg"
-  (interactive
-   (call-process "64tass" nil "*64tass compilation log*" nil buffer-file-name "-o" (paw64-target-name))))
+  (interactive)
+  (call-process "64tass" nil "*64tass compilation log*" nil buffer-file-name "-o" (paw64-target-name)))
 
 (defun paw64-compile-and-run-64tass ()
   "Assembles current buffer using ‘paw64-compile-64tass’ and runs the resulting binary in VICE/x64"
