@@ -23,9 +23,7 @@
 
 
 (defconst paw64-font-lock-keywords
-  `(("\\;.*" . font-lock-comment-face)
-
-    ;; Preprocessor
+  `(;; Preprocessor
     ("\\.[[:alpha:]]+" . font-lock-keyword-face)
 
     ;; Assembly address
@@ -189,6 +187,12 @@
 
 
 
+(defvar paw64-mode-syntax-table
+  (let ((st (make-syntax-table)))
+    (modify-syntax-entry ?\; "< b" st)
+    (modify-syntax-entry ?\n "> b" st)
+    st))
+
 (defvar paw64-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") 'paw64-compile-64tass)
@@ -201,6 +205,7 @@
   "Paw64"
   (kill-all-local-variables)
   "Major mode for 6502/6510 assembly with 64tass and/or paw64"
+  (set-syntax-table (make-syntax-table paw64-mode-syntax-table))
   (set (make-local-variable 'font-lock-defaults) '(paw64-font-lock-keywords))
   (set (make-local-variable 'indent-line-function) 'paw64-indent))
 
