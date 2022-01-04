@@ -68,8 +68,10 @@
 (defun paw64-resolve-instr-indent ()
   "Resolve indentation level for instruction/opcode column by looking at previous lines, otherwise use ‘paw64-indent-level’"
   (save-excursion
+    (beginning-of-line)
     (let ((col (re-search-backward paw64-6502-opcode-regex nil t)))
-      (if (integerp col)
+      (if (and (integerp col)
+               (not (= col 0)))
           (progn
             (goto-char col)
             (current-column))
@@ -118,17 +120,17 @@
 
 (defun paw64-indent-at-cursor ()
   "Indents the remainder of the line from the current cursor column"
+  (paw64-eat-ws)
   (if (or (looking-at "[[:blank:]]*;")
           (and (eolp)
                (> (current-column) (paw64-resolve-instr-indent))))
-      (progn
-        (paw64-eat-ws)
-        (indent-to (paw64-resolve-comment-indent))))
+      (indent-to (paw64-resolve-comment-indent)))
+  (if (looking-back (concat "^" paw64-6502-opcode-regex))
+      (save-excursion
+        (beginning-of-line)
+        (indent-to (paw64-resolve-instr-indent))))
   (if (looking-back "^\\(?:[[:alnum:]]\\|_\\)+[[:blank:]]*")
-      (progn
-        (paw64-eat-ws)
-        (indent-to (paw64-resolve-instr-indent)))))
-
+      (indent-to (paw64-resolve-instr-indent))))
 
 (defun paw64-indent-line ()
   "Indent current line"
@@ -197,6 +199,7 @@
 (define-derived-mode paw64-mode
   fundamental-mode
   "Paw64"
+  (kill-all-local-variables)
   "Major mode for 6502/6510 assembly with 64tass and/or paw64"
   (set (make-local-variable 'font-lock-defaults) '(paw64-font-lock-keywords))
   (set (make-local-variable 'indent-line-function) 'paw64-indent))
