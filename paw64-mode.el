@@ -157,17 +157,19 @@
   "Inserts a basic program to bootstrap machine language program at cursor."
   (interactive)
   (let ((prog-addr (paw64-to-decimal-string (string-trim (read-string "Enter program start address: ")))))
+    (beginning-of-line)
     (insert "*=$0801")
-    (newline-and-indent)
+    (newline)
     (insert ".byte $0c, $08, $0a, $00, $9e, $20")
-    (newline-and-indent)
+    (newline)
     (insert (concat ".byte " (let ((nums ()))
                                (dotimes (i (length prog-addr))
                                  (push (concat "$3" (substring prog-addr i (+ i 1))) nums))
                                (dotimes (i (- 7 (length prog-addr)))
                                  (push "$00" nums))
                                (string-join (nreverse nums) ", "))))
-    (newline-and-indent)))
+    (newline)
+    (newline)))
 
 
 
@@ -203,7 +205,6 @@
 (define-derived-mode paw64-mode
   fundamental-mode
   "Paw64"
-  (kill-all-local-variables)
   "Major mode for 6502/6510 assembly with 64tass and/or paw64"
   (set-syntax-table (make-syntax-table paw64-mode-syntax-table))
   (set (make-local-variable 'font-lock-defaults) '(paw64-font-lock-keywords))
