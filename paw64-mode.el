@@ -92,21 +92,6 @@
               (current-column))
           paw64-comment-indent-level)))))
 
-(defun paw64-indent ()
-  "The ‘indent-line-function’ of paw64-mode. Delegates to either ‘paw64-indent-line’ or ‘paw64-indent-at-cursor’ depending on context."
-  (interactive)
-  (if (and (not (bolp))
-           (looking-at ";")
-           (and (= (current-column) (paw64-resolve-comment-indent))))
-      (progn
-        (paw64-eat-ws)
-        (if (not (bolp))
-            (indent-to (+ 1 (current-column)))))
-    (if (or (bolp)
-            (looking-back "\n[[:blank:]]+"))
-        (paw64-indent-line)
-      (paw64-indent-at-cursor))))
-
 (defun paw64-eat-ws ()
   "Removes all whitespace immediately before and after the current cursor-position"
   (save-restriction
@@ -116,19 +101,37 @@
         (re-search-forward "[[:blank:]]*")
         (replace-match "" nil nil)))))
 
+(defun paw64-indent ()
+  "The ‘indent-line-function’ of paw64-mode. Delegates to either ‘paw64-indent-line’ or ‘paw64-indent-at-cursor’ depending on context."
+  (interactive)
+  (cond
+   ((and (looking-at ";") (= (current-column) (paw64-resolve-comment-indent)))
+    (progn
+      (paw64-eat-ws)
+      (if (not (bolp))
+          (indent-to (+ 1 (current-column))))))
+   (t (if (or (bolp)
+              (looking-back "\n[[:blank:]]+"))
+          (paw64-indent-line)
+        (paw64-indent-at-cursor)))))
+
 (defun paw64-indent-at-cursor ()
   "Indents the remainder of the line from the current cursor column"
-  (paw64-eat-ws)
-  (if (or (looking-at "[[:blank:]]*;")
-          (and (eolp)
-               (> (current-column) (paw64-resolve-instr-indent))))
-      (indent-to (paw64-resolve-comment-indent)))
-  (if (looking-back (concat "^" paw64-6502-opcode-regex))
-      (save-excursion
-        (beginning-of-line)
-        (indent-to (paw64-resolve-instr-indent))))
-  (if (looking-back "^\\(?:[[:alnum:]]\\|_\\)+[[:blank:]]*")
+  (cond
+   ((or (looking-at "[[:blank:]]*;")
+        (and (eolp)
+             (> (current-column) (paw64-resolve-instr-indent))))
+    (progn
+      (paw64-eat-ws)
+      (indent-to (paw64-resolve-comment-indent))))
+
+   ((looking-back (concat "^" paw64-6502-opcode-regex))
+    (save-excursion
+      (beginning-of-line)
       (indent-to (paw64-resolve-instr-indent))))
+
+   ((looking-back "^\\(?:[[:alnum:]]\\|_\\)+[[:blank:]]*")
+    (indent-to (paw64-resolve-instr-indent)))))
 
 (defun paw64-indent-line ()
   "Indent current line"
@@ -137,11 +140,14 @@
     (beginning-of-line)
     (paw64-eat-ws))
   (paw64-eat-ws)
-  (if (looking-at ";")
-      (indent-to (paw64-resolve-comment-indent)))
-  (if (or (looking-at paw64-6502-opcode-regex)
-          (and (bolp) (eolp)))
-      (indent-to (paw64-resolve-instr-indent))))
+  (cond
+
+   ((looking-at ";")
+    (indent-to (paw64-resolve-comment-indent)))
+
+   ((or (looking-at paw64-6502-opcode-regex)
+        (and (bolp) (eolp)))
+    (indent-to (paw64-resolve-instr-indent)))))
 
 
 
