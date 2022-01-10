@@ -104,22 +104,25 @@
 (defun paw64-indent ()
   "The ‘indent-line-function’ of paw64-mode. Delegates to either ‘paw64-indent-line’ or ‘paw64-indent-at-cursor’ depending on context."
   (interactive)
-  (cond
-   ((and (looking-at ";") (= (current-column) (paw64-resolve-comment-indent)))
-    (progn
-      (paw64-eat-ws)
-      (if (not (bolp))
-          (indent-to (+ 1 (current-column))))))
-   (t (if (or (bolp)
-              (looking-back "\n[[:blank:]]+"))
-          (paw64-indent-line)
-        (paw64-indent-at-cursor)))))
+  (if (bolp)
+      (paw64-indent-line)
+    (paw64-indent-at-cursor)))
 
 (defun paw64-indent-at-cursor ()
   "Indents the remainder of the line from the current cursor column"
   (cond
-   ((or (looking-at "[[:blank:]]*;")
-        (and (eolp)
+   ((and
+     (looking-back "^[[:blank:]]*")
+     (eolp))
+    (paw64-eat-ws))
+
+   ((and (looking-at ";") (= (current-column) (paw64-resolve-comment-indent)))
+    (progn
+      (paw64-eat-ws)
+      (indent-to (+ (if (bolp) 0 1) (current-column)))))
+
+   ((or (eolp)
+        (and (looking-at "[[:blank:]]*;")
              (> (current-column) (paw64-resolve-instr-indent))))
     (progn
       (paw64-eat-ws)
