@@ -204,15 +204,17 @@
   "Exports all label symbols using the 64tass binary"
   (interactive)
   (let ((labels-file (paw64-target-name "labels")))
-    (call-process "64tass" nil nil nil buffer-file-name "-l" labels-file)
+    (call-process "64tass" nil "*64output*"  nil buffer-file-name "-l" labels-file)
     labels-file))
 
 (defun paw64-read-labels-file (file-name)
-  (with-temp-buffer
-    (insert-file-contents file-name)
-    (buffer-string)))
+  (if (file-exists-p file-name)
+      (with-temp-buffer
+        (insert-file-contents file-name)
+        (buffer-string))
+    ""))
 
-(defun paw64-parse-file-labels (contents)
+(defun paw64-parse-labels-file (contents)
   (map 'list (lambda (row) (car (split-string row "[[:blank:]=]+"))) (split-string contents "\n")))
 
 
@@ -233,10 +235,20 @@
       paw64-label-completions))))
 
 (defun paw64-after-change (beg end len)
-  (if (and buffer-file-name
-           (> len 0))
-      (set 'paw64-label-completions
-           (paw64-parse-labels-file (paw64-read-labels-file (paw64-tass64-export-labels))))))
+  (save-match-data
+    (if (and buffer-file-name
+             (> len 0))
+        (set 'paw64-label-completions
+             (paw64-parse-labels-file (paw64-read-labels-file (paw64-tass64-export-labels)))))))
+
+
+
+(flycheck-define-checker 64tass
+  "A 6502 assembly syntax checker using 64tass."
+  :command ("64tass" source "--no-output")
+  :error-patterns
+  ((error line-start (file-name) ":" line ":" column ": " (optional "fatal ") "error: " (message) line-end))
+  :modes paw64-mode)
 
 
 
@@ -262,7 +274,7 @@
   (set (make-local-variable 'indent-line-function) 'paw64-indent)
   (add-hook 'after-change-functions 'paw64-after-change)
   (setq-local company-backends '(paw64-company-backend))
-  (company-mode))
-
+  (company-mode)
+  (flycheck-mode))
 
 (provide 'paw64-mode)
