@@ -185,9 +185,9 @@
 
 
 
-(defun paw64-target-name (&optional ext)
+(defun paw64-target-name (&optional ext file-name)
   (or ext (setq ext "prg"))
-  (concat (car (split-string buffer-file-name "\\.")) "." ext))
+  (concat (car (split-string (or file-name buffer-file-name) "\\.")) "." ext))
 
 (defun paw64-compile-64tass ()
   "Compile/Assemble current buffer using 64tass. Result will be stored in a file named after the buffer, with the file extension .prg"
@@ -200,11 +200,11 @@
   (paw64-compile-64tass)
   (call-process "x64" nil 0 nil (paw64-target-name)))
 
-(defun paw64-tass64-export-labels ()
+(defun paw64-tass64-export-labels (&optional file-name)
   "Exports all label symbols using the 64tass binary"
   (interactive)
-  (let ((labels-file (paw64-target-name "labels")))
-    (call-process "64tass" nil "*64output*"  nil buffer-file-name "-l" labels-file)
+  (let ((labels-file (paw64-target-name "labels" file-name)))
+    (call-process "64tass" nil "*64output*"  nil (or file-name buffer-file-name) "-l" labels-file)
     labels-file))
 
 (defun paw64-read-labels-file (file-name)
@@ -215,7 +215,14 @@
     ""))
 
 (defun paw64-parse-labels-file (contents)
-  (map 'list (lambda (row) (car (split-string row "[[:blank:]=]+"))) (split-string contents "\n")))
+  (butlast (map 'list (lambda (row) (car (split-string row "[[:blank:]=]+"))) (split-string contents "\n"))))
+
+
+
+(defun paw64-create-temp-file (file-name)
+  (let ((tmp-file (expand-file-name (file-name-nondirectory file-name) (make-temp-file "paw64" 'directory))))
+    (write-region nil nil tmp-file nil 0)
+    tmp-file))
 
 
 
@@ -238,8 +245,11 @@
   (save-match-data
     (if (and buffer-file-name
              (> len 0))
-        (set 'paw64-label-completions
-             (paw64-parse-labels-file (paw64-read-labels-file (paw64-tass64-export-labels)))))))
+        (let ((tmp-file (paw64-create-temp-file buffer-file-name)))
+          (set 'paw64-label-completions
+               (let ((parsed-labels (paw64-parse-labels-file (paw64-read-labels-file (paw64-tass64-export-labels tmp-file)))))
+                 (or parsed-labels paw64-label-completions)))
+          (delete-directory (file-name-directory tmp-file) t)))))
 
 
 
