@@ -248,7 +248,10 @@
   :command ("64tass" source "--no-output")
   :error-patterns
   ((error line-start (file-name) ":" line ":" column ": " (optional "fatal ") "error: " (message) line-end))
-  :modes paw64-mode)
+  :modes paw64-mode
+  :enabled (lambda () (eq 'paw64-mode major-mode)))
+
+(add-to-list 'flycheck-checkers '64tass)
 
 
 
