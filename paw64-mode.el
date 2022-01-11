@@ -1,4 +1,7 @@
 
+(require 'cl-lib)
+(require 'company)
+
 (defcustom paw64-indent-level 16
   "Default level of indentation for assembly instructions(opcodes)"
   :type 'integer)
@@ -182,8 +185,9 @@
 
 
 
-(defun paw64-target-name ()
-  (concat (car (split-string buffer-file-name "\\.")) ".prg"))
+(defun paw64-target-name (&optional ext)
+  (or ext (setq ext "prg"))
+  (concat (car (split-string buffer-file-name "\\.")) "." ext))
 
 (defun paw64-compile-64tass ()
   "Compile/Assemble current buffer using 64tass. Result will be stored in a file named after the buffer, with the file extension .prg"
@@ -195,6 +199,44 @@
   (interactive)
   (paw64-compile-64tass)
   (call-process "x64" nil 0 nil (paw64-target-name)))
+
+(defun paw64-tass64-export-labels ()
+  "Exports all label symbols using the 64tass binary"
+  (interactive)
+  (let ((labels-file (paw64-target-name "labels")))
+    (call-process "64tass" nil nil nil buffer-file-name "-l" labels-file)
+    labels-file))
+
+(defun paw64-read-labels-file (file-name)
+  (with-temp-buffer
+    (insert-file-contents file-name)
+    (buffer-string)))
+
+(defun paw64-parse-file-labels (contents)
+  (map 'list (lambda (row) (car (split-string row "[[:blank:]=]+"))) (split-string contents "\n")))
+
+
+
+(defvar paw64-label-completions
+  '("label" "mainloop" "mainloop_ret" "init"))
+
+(defun paw64-company-backend (command &optional arg &rest ignored)
+  (interactive (list 'interactive))
+
+  (cl-case command
+    (interactive (company-begin-backend 'paw64-company-backend))
+    (prefix (and (eq major-mode 'paw64-mode)
+                 (company-grab-symbol)))
+    (candidates
+     (cl-remove-if-not
+      (lambda (c) (string-prefix-p arg c))
+      paw64-label-completions))))
+
+(defun paw64-after-change (beg end len)
+  (if (and buffer-file-name
+           (> len 0))
+      (set 'paw64-label-completions
+           (paw64-parse-labels-file (paw64-read-labels-file (paw64-tass64-export-labels))))))
 
 
 
@@ -217,6 +259,10 @@
   "Major mode for 6502/6510 assembly with 64tass and/or paw64"
   (set-syntax-table (make-syntax-table paw64-mode-syntax-table))
   (set (make-local-variable 'font-lock-defaults) '(paw64-font-lock-keywords))
-  (set (make-local-variable 'indent-line-function) 'paw64-indent))
+  (set (make-local-variable 'indent-line-function) 'paw64-indent)
+  (add-hook 'after-change-functions 'paw64-after-change)
+  (setq-local company-backends '(paw64-company-backend))
+  (company-mode))
+
 
 (provide 'paw64-mode)
