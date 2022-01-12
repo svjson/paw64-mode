@@ -22,6 +22,9 @@ Indentation level for assembly instructions and comments are derived from indent
 
 ## Other recommended packages
 
+### company-64tass
+[company-64tass](https://github.com/svjson/company-64tass) provides label and variable auto-completion using [company-mode](https://github.com/company-mode/company-mode)
+
 ### flycheck-64tass
 [flycheck-64tass](https://github.com/svjson/flycheck-64tass) provides a checker for highlighting syntax and compile/assembly errors using [flycheck](https://github.com/flycheck/flycheck)
 
