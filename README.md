@@ -20,6 +20,10 @@ This mode is in early stages of development.
 Indentation is context sensitive, and geared towards working in three columns: label, assembly instruction, comment.
 Indentation level for assembly instructions and comments are derived from indentations used in the buffer, and falls back to `paw64-indent-level` and `paw64-comment-indent-level` if buffer resolution fails.
 
+## Other recommended packages
+
+### flycheck-64tass
+[flycheck-64tass](https://github.com/svjson/flycheck-64tass) provides a checker for highlighting syntax and compile/assembly errors using [flycheck](https://github.com/flycheck/flycheck)
 
 ## Dependencies
 ### 64tass 

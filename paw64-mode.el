@@ -253,18 +253,6 @@
 
 
 
-(flycheck-define-checker 64tass
-  "A 6502 assembly syntax checker using 64tass."
-  :command ("64tass" source "--no-output" "-I" (eval (file-name-directory buffer-file-name)))
-  :error-patterns
-  ((error line-start (file-name) ":" line ":" column ": " (optional "fatal ") "error: " (message) line-end))
-  :modes paw64-mode
-  :enabled (lambda () (eq 'paw64-mode major-mode)))
-
-(add-to-list 'flycheck-checkers '64tass)
-
-
-
 (defvar paw64-mode-syntax-table
   (let ((st (make-syntax-table)))
     (modify-syntax-entry ?\; "< b" st)
@@ -287,7 +275,6 @@
   (set (make-local-variable 'indent-line-function) 'paw64-indent)
   (add-hook 'after-change-functions 'paw64-after-change)
   (setq-local company-backends '(paw64-company-backend))
-  (company-mode)
-  (flycheck-mode))
+  (company-mode))
 
 (provide 'paw64-mode)
