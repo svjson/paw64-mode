@@ -93,3 +93,20 @@
     (should (current-line= (concat (with-indent 16 "lda #$00") (with-indent 6 ";; Load that zero, man!"))))
     (indent-according-to-mode)
     (should (current-line= (with-indent 16 "lda #$00 ;; Load that zero, man!")))))
+
+(ert-deftest paw64--indent-at-label ()
+  (with-temp-buffer
+    (paw64-mode)
+    (insert "my_label")
+    (beginning-of-line)
+    (should (current-line= "my_label"))))
+
+(ert-deftest paw64--indent-after-label--empty-line-after ()
+  (with-temp-buffer
+    (paw64-mode)
+    (insert "my_label")
+    (end-of-line)
+    (indent-according-to-mode)
+    (should (current-line= (trailing-ws 8 "my_label")))))
+
+
