@@ -20,7 +20,12 @@
 
 (defconst paw64-6502-opcode-regex (concat "\\<" (regexp-opt paw64-6502-opcode-list) "\\>"))
 
-(defconst paw64-symbol-regex "[a-zA-Z_][a-zA-Z0-9_]*")
+(defconst paw64-symbol-regex "[a-zA-Z_][a-zA-Z0-9_]+")
+
+(defconst paw64-constant-decl-regex "^" (concat paw64-symbol-regex "\s*="))
+(defconst paw64-assembly-address-regex "^\\(\\*=\\)")
+(defconst paw64-instruction-regex paw64-6502-opcode-regex)
+(defconst paw64-banner-label-regex (concat "^" paw64-symbol-regex ":"))
 
 
 
@@ -94,6 +99,30 @@
               (current-column))
           paw64-comment-indent-level)))))
 
+(defun paw64-previous-statement ()
+  (save-excursion
+    (if (bobp)
+        'nothing
+      (progn
+        (previous-line)
+        (beginning-of-line)
+        (let ((line (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+          (cond
+           ((string-match "^\s*$" line)
+            (paw64-previous-statement))
+
+           ((string-match paw64-instruction-regex line)
+            'instruction)
+
+           ((string-match paw64-assembly-address-regex line)
+            'assembly-address)
+
+           ((string-match paw64-banner-label-regex line)
+            'banner-label)
+
+           ((string-match paw64-constant-decl-regex line)
+            'constant-declaration)))))))
+
 (defun paw64-eat-ws ()
   "Removes all whitespace immediately before and after the current cursor-position"
   (save-restriction
@@ -104,11 +133,17 @@
         (replace-match "" nil nil)))))
 
 (defun paw64-indent ()
-  "The ‘indent-line-function’ of paw64-mode. Delegates to either ‘paw64-indent-line’ or ‘paw64-indent-at-cursor’ depending on context."
+  "The ‘indent-line-function’ of paw64-mode. Delegates to either ‘paw64-indent-line’, ‘paw64-indent-at-cursor’ or 'paw64-indent-by-previous' depending on context."
   (interactive)
-  (if (bolp)
-      (paw64-indent-line)
-    (paw64-indent-at-cursor)))
+  (cond
+   ((and (bolp) (eolp))
+    (paw64-indent-by-previous))
+
+   ((bolp)
+    (paw64-indent-line))
+
+   (t
+    (paw64-indent-at-cursor))))
 
 (defun paw64-indent-at-cursor ()
   "Indents the remainder of the line from the current cursor column"
@@ -142,6 +177,11 @@
         (paw64-eat-ws)
         (indent-to comment-col))))))
 
+(defun paw64-indent-by-previous ()
+  (when (member (paw64-previous-statement)
+                '(instruction assembly-address banner-label))
+    (indent-to  (paw64-resolve-instr-indent))))
+
 (defun paw64-indent-line ()
   "Indent current line"
   (interactive)
@@ -167,6 +207,12 @@
       (save-excursion
         (goto-char (+ (line-beginning-position) instr-pos))
         (paw64-indent-at-cursor)))))
+
+(defun paw64-indent-for-tab (&optional arg)
+  (interactive)
+  (if (and (bolp) (eolp))
+      (indent-to (paw64-resolve-instr-indent))
+    (indent-for-tab-command arg)))
 
 
 
@@ -226,6 +272,8 @@
     (define-key map (kbd "C-c C-c") 'paw64-compile-64tass)
     (define-key map (kbd "C-c C-x") 'paw64-compile-and-run-64tass)
     (define-key map (kbd "C-c C-b") 'paw64-insert-basic-header)
+    (define-key map (kbd "TAB") 'paw64-indent-for-tab)
+
     map))
 
 (define-derived-mode paw64-mode
@@ -236,7 +284,8 @@
   (set (make-local-variable 'font-lock-defaults) '(paw64-font-lock-keywords))
   (set (make-local-variable 'indent-line-function) 'paw64-indent)
 
-  (add-hook 'post-command-hook #'paw64-post-command-hook nil t))
+  (add-hook 'post-command-hook #'paw64-post-command-hook nil t)
+  (electric-indent-local-mode -1))
 
 
 (provide 'paw64-mode)
