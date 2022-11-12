@@ -158,6 +158,16 @@
         (and (bolp) (eolp)))
     (indent-to (paw64-resolve-instr-indent)))))
 
+(defun paw64-post-command-hook ()
+  (let* ((line (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+         (instr-pos (string-match paw64-6502-opcode-regex line))
+         (col (- (point) (line-beginning-position))))
+    (when (and instr-pos
+               (< col instr-pos))
+      (save-excursion
+        (goto-char (+ (line-beginning-position) instr-pos))
+        (paw64-indent-at-cursor)))))
+
 
 
 (defun paw64-to-decimal-string (input)
@@ -224,6 +234,9 @@
   "Major mode for 6502/6510 assembly with 64tass and/or paw64"
   (set-syntax-table (make-syntax-table paw64-mode-syntax-table))
   (set (make-local-variable 'font-lock-defaults) '(paw64-font-lock-keywords))
-  (set (make-local-variable 'indent-line-function) 'paw64-indent))
+  (set (make-local-variable 'indent-line-function) 'paw64-indent)
+
+  (add-hook 'post-command-hook #'paw64-post-command-hook nil t))
+
 
 (provide 'paw64-mode)
