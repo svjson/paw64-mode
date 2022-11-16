@@ -24,7 +24,7 @@
 
 (defconst paw64-constant-decl-regex "^" (concat paw64-symbol-regex "\s*="))
 (defconst paw64-assembly-address-regex "^\\(\\*=\\)")
-(defconst paw64-instruction-regex paw64-6502-opcode-regex)
+(defconst paw64-instruction-regex (concat "[[:blank:]]+" paw64-6502-opcode-regex))
 (defconst paw64-banner-label-regex (concat "^" paw64-symbol-regex ":"))
 
 
@@ -52,6 +52,9 @@
     ;; Constant hex value
     ("=" "\\$[0-9a-fA-F]+" nil nil (0 'bold))
 
+    ;; Highlight opcodes with optimized regexp for all valid 6502/6510 opcodes, including illegal/undocumented opcodes
+    (,(concat "[[:blank:]]+" paw64-6502-opcode-regex) 0 font-lock-keyword-face)
+
     ;; Opcode argument value
     (,paw64-6502-opcode-regex "\\#[\\$\\%]\\(?:[0-9a-fA-F]+\\)" nil nil (0 'bold))
 
@@ -59,14 +62,11 @@
     (,paw64-6502-opcode-regex "\\$\\(?:[0-9a-fA-F]+\\)" nil nil (0 'font-lock-variable-name-face))
 
     ;; Opcode argument label/constant
-    (,paw64-6502-opcode-regex ,(concat "[[:blank:]]+\\(" paw64-symbol-regex "\\)") nil nil (0 'font-lock-preprocessor-face))
+    (,paw64-instruction-regex ,(concat "[[:blank:]]+\\(" paw64-symbol-regex "\\)") nil nil (0 'font-lock-preprocessor-face))
 
     ;; Opcode register arg
-    (,(concat "\\(" paw64-6502-opcode-regex "\\).*\\,[[:space:]]?\\([xy]\\)")
-     (2 'bold))
-
-    ;; Highlight opcodes with optimized regexp for all valid 6502/6510 opcodes, including illegal/undocumented opcodes
-    (,paw64-6502-opcode-regex 0 font-lock-keyword-face)))
+    (,(concat "\\([[:blank:]]+" paw64-6502-opcode-regex "\\).*\\,[[:space:]]?\\([xy]\\)")
+     (2 'bold))))
 
 
 
@@ -74,7 +74,8 @@
   "Resolve indentation level for instruction/opcode column by looking at previous lines, otherwise use ‘paw64-indent-level’"
   (save-excursion
     (beginning-of-line)
-    (let ((col (re-search-backward paw64-6502-opcode-regex nil t)))
+    (let ((col (progn (re-search-backward (concat "[[:blank:]]+\\(" paw64-6502-opcode-regex "\\)") nil t)
+                      (match-beginning 1))))
       (if (and (integerp col)
                (not (= col 0)))
           (progn
