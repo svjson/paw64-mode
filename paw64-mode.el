@@ -276,6 +276,7 @@
 
     map))
 
+;;;###autoload
 (define-derived-mode paw64-mode
   fundamental-mode
   "Paw64"
