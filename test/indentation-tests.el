@@ -1,10 +1,4 @@
-
 (require 'paw64-mode)
-
-(defun indent-and-insert (text)
-  (interactive)
-  (indent-according-to-mode)
-  (insert text))
 
 (defun insert-and-indent (text)
   (interactive)
