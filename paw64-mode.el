@@ -81,7 +81,7 @@
           (progn
             (goto-char col)
             (current-column))
-      paw64-indent-level))))
+        paw64-indent-level))))
 
 (defun paw64-resolve-comment-indent()
   "Resolve indentation level for comment column by looking at previous lines, otherwise use ‘paw64-indent-level’"
@@ -156,6 +156,13 @@
        (eolp))
       (paw64-eat-ws))
 
+     ((and
+       (looking-back "^[[:blank:]]*")
+       (looking-at (concat "[[:blank:]]*" paw64-6502-opcode-regex)))
+      (progn
+        (paw64-eat-ws)
+        (indent-to (paw64-resolve-instr-indent))))
+
      ((looking-back (concat "^" paw64-6502-opcode-regex))
       (save-excursion
         (beginning-of-line)
@@ -200,14 +207,21 @@
     (indent-to (paw64-resolve-instr-indent)))))
 
 (defun paw64-post-command-hook ()
-  (let* ((line (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
-         (instr-pos (string-match paw64-6502-opcode-regex line))
-         (col (- (point) (line-beginning-position))))
-    (when (and instr-pos
-               (< col instr-pos))
-      (save-excursion
-        (goto-char (+ (line-beginning-position) instr-pos))
-        (paw64-indent-at-cursor)))))
+  (let ((this-cmd (symbol-name this-command)))
+    (when (member this-cmd '("self-insert-command"
+                             "delete-backward-char"
+                             "delete-forward-char"
+                             "company-complete-selection"
+                             "yank"
+                             "kill-region"))
+      (let* ((line (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+             (instr-pos (string-match paw64-6502-opcode-regex line))
+             (col (- (point) (line-beginning-position))))
+        (when (and instr-pos
+                   (< col instr-pos))
+          (save-excursion
+            (goto-char (+ (line-beginning-position) instr-pos))
+            (paw64-indent-at-cursor)))))))
 
 (defun paw64-indent-for-tab (&optional arg)
   (interactive)
