@@ -29,11 +29,11 @@ Indentation level for assembly instructions and comments are derived from indent
 [flycheck-64tass](https://github.com/svjson/flycheck-64tass) provides a checker for highlighting syntax and compile/assembly errors using [flycheck](https://github.com/flycheck/flycheck)
 
 ## Dependencies
-### 64tass 
-[64tass](https://github.com/irmen/64tass) is a fast multi-pass assembler that uses a superset of the C64 Turbo Assembler syntax.
+### 64tass.el
+[64tass.el](https://github.com/svjson/64tass.el) is a small library for interaction between emacs and 64tass
 
-### Paw64
-**Paw64** is a currently unreleased toolkit that features a 64tass-compatible assembler/disassembler, Commodore 64 and 6510 emulation, unit test framework and debugger. Paw64 is not required for paw64-mode.
+### 64tass
+[64tass](https://github.com/irmen/64tass) is a fast multi-pass assembler that uses a superset of the C64 Turbo Assembler syntax.
 
 ### VICE
 [VICE - The Versatile Commodore Emulator](https://vice-emu.sourceforge.io/) is an emulator for Commodore machines, available for virtually all platforms.
