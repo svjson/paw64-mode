@@ -1,3 +1,34 @@
+;;; paw64-mode.el --- Major mode for 64tass assembly -*- lexical-binding: t -*-
+
+;; Copyright © 2012-2023 Sven Johansson
+
+;; Author: Sven Johansson <johansson.sven@gmail.com>
+;; URL: https://github.com/svjson/paw64-mode
+;; Keywords: tools, languages, 64tass, assembly, major-mode
+;; Version: 0.0.2
+;; Package-Requires: ((emacs "28.2"))
+;; This file is NOT part of GNU Emacs.
+
+;; This program is free software: you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation, either version 3 of the
+;; License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be useful, but
+;; WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;; General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see `http://www.gnu.org/licenses/'.
+
+;;; Commentary:
+
+;; This Major Mode provides syntax highlighting and indentation support
+;; for editing 64tass  assembly source files, as well as convenience
+;; shortcuts for assembling and launching programs in VICE.
+
+;;; Code:
 
 (require '64tass)
 (require 'cl-lib)
@@ -6,12 +37,14 @@
 (require 'subr-x)
 
 (defcustom paw64-indent-level 16
-  "Default level of indentation for assembly instructions(opcodes)"
-  :type 'integer)
+  "Default level of indentation for assembly instructions(opcodes)."
+  :type 'integer
+  :group 'languages)
 
 (defcustom paw64-comment-indent-level 30
-  "Default level of comment/documentation column"
-  :type 'integer)
+  "Default level of comment/documentation column."
+  :type 'integer
+  :group 'languages)
 
 
 
@@ -75,7 +108,10 @@
 
 
 (defun paw64-resolve-instr-indent ()
-  "Resolve indentation level for instruction/opcode column by looking at previous lines, otherwise use ‘paw64-indent-level’"
+  "Resolve indentation level for instruction/opcode column used in file.
+This operation attempts to determine indentation by looking at previous lines.
+If no previous lines exist or indent level cannot be determined,
+fall back to ‘paw64-indent-level’."
   (save-excursion
     (beginning-of-line)
     (let ((col (progn (re-search-backward (concat "[[:blank:]]+\\(" paw64-6502-opcode-regex "\\)") nil t)
@@ -88,7 +124,9 @@
         paw64-indent-level))))
 
 (defun paw64-resolve-comment-indent()
-  "Resolve indentation level for comment column by looking at previous lines, otherwise use ‘paw64-indent-level’"
+  "Resolve indentation level for comment column used in file.
+This operation attemts to determine indentation by looking at previous
+lines, otherwise use ‘paw64-indent-level’"
   (let ((instr-col (paw64-resolve-instr-indent)))
     (save-excursion
       ;; Find comment start that is right of instruction column
@@ -129,7 +167,7 @@
             'constant-declaration)))))))
 
 (defun paw64-eat-ws ()
-  "Removes all whitespace immediately before and after the current cursor-position"
+  "Remove all whitespace immediately before and after the current cursor-position."
   (save-restriction
     (save-match-data
       (progn
@@ -138,7 +176,9 @@
         (replace-match "" nil nil)))))
 
 (defun paw64-indent ()
-  "The ‘indent-line-function’ of paw64-mode. Delegates to either ‘paw64-indent-line’, ‘paw64-indent-at-cursor’ or 'paw64-indent-by-previous' depending on context."
+  "The ‘indent-line-function’ of paw64-mode.
+Delegates to either ‘paw64-indent-line’, ‘paw64-indent-at-cursor’ or
+'paw64-indent-by-previous' depending on context."
   (interactive)
   (cond
    ((and (bolp) (eolp))
@@ -151,7 +191,7 @@
     (paw64-indent-at-cursor))))
 
 (defun paw64-indent-at-cursor ()
-  "Indents the remainder of the line from the current cursor column"
+  "Indent the remainder of the line from the current cursor column."
   (let* ((instr-col (paw64-resolve-instr-indent))
          (comment-col (paw64-resolve-comment-indent)))
     (cond
@@ -190,12 +230,13 @@
         (indent-to comment-col))))))
 
 (defun paw64-indent-by-previous ()
+  "Indent line according to previous lines."
   (when (member (paw64-previous-statement)
                 '(instruction assembly-address banner-label))
     (indent-to  (paw64-resolve-instr-indent))))
 
 (defun paw64-indent-line ()
-  "Indent current line"
+  "Indent current line."
   (interactive)
   (save-excursion
     (beginning-of-line)
@@ -211,6 +252,7 @@
     (indent-to (paw64-resolve-instr-indent)))))
 
 (defun paw64-post-command-hook ()
+  "Post-command hook for immediate formatting."
   (let ((this-cmd (symbol-name this-command)))
     (when (member this-cmd '("self-insert-command"
                              "delete-backward-char"
@@ -228,6 +270,7 @@
             (paw64-indent-at-cursor)))))))
 
 (defun paw64-indent-for-tab (&optional arg)
+  "Handler for TAB key. ARG is optional."
   (interactive)
   (if (and (bolp) (eolp))
       (indent-to (paw64-resolve-instr-indent))
@@ -236,7 +279,9 @@
 
 
 (defun paw64-to-decimal-string (input)
-  "Converts string representation of hexadecimal number to a string containing its corresponding integer value."
+  "Convert an INPUT hex string to decimal string.
+A string representation of hexadecimal number will be converted a string
+containing its corresponding integer value."
   (let ((hex (string-match "\\$[[:digit:]]+" input))
         (dec (string-match "[[:digit:]]+" input)))
     (if (= dec 0)
@@ -244,7 +289,7 @@
       (number-to-string (string-to-number (substring input 1) 16)))))
 
 (defun paw64-insert-basic-header ()
-  "Inserts a basic program to bootstrap machine language program at cursor."
+  "Insert a basic program to bootstrap machine language program at cursor."
   (interactive)
   (let ((prog-addr (paw64-to-decimal-string (string-trim (read-string "Enter program start address: ")))))
     (beginning-of-line)
@@ -264,8 +309,9 @@
 
 
 (defun paw64-list--extract-lines (list-content line-start line-end)
-  "Extract lines corresponding to source lines between @line-start and @line-end
-   from 64tass Assembly listing output."
+  "Extract lines from 64tass listing in LIST-CONTENT.
+Extracts corresponding source lines between LINE-START and LINE-END
+from 64tass Assembly listing output."
   (interactive)
   (let ((lines-regex (--> (number-sequence line-start line-end)
                           (cl-map 'list 'int-to-string it)
@@ -386,7 +432,7 @@ the buffer and then launching VICE/x64 with it."
     (define-key map (kbd "C-c C-c") '64tass-compile)
     (define-key map (kbd "C-c C-x") 'paw64-compile-and-run-64tass)
     (define-key map (kbd "C-c C-b") 'paw64-insert-basic-header)
-    (define-key map (kbd "C-c m u") 'paw64-unroll-macro)
+    (define-key map (kbd "C-c C-m u") 'paw64-unroll-macro)
     (define-key map (kbd "TAB") 'paw64-indent-for-tab)
 
     map))
@@ -395,7 +441,7 @@ the buffer and then launching VICE/x64 with it."
 (define-derived-mode paw64-mode
   fundamental-mode
   "Paw64"
-  "Major mode for 6502/6510 assembly with 64tass and/or paw64"
+  "Major mode for 6502/6510 assembly with 64tass and/or paw64."
   (set-syntax-table (make-syntax-table paw64-mode-syntax-table))
   (set (make-local-variable 'font-lock-defaults) '(paw64-font-lock-keywords))
   (set (make-local-variable 'indent-line-function) 'paw64-indent)
@@ -405,3 +451,4 @@ the buffer and then launching VICE/x64 with it."
 
 
 (provide 'paw64-mode)
+;;; paw64-mode.el ends here
