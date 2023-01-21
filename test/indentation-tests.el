@@ -28,7 +28,7 @@
 (ert-deftest paw64--indent-instr--on-first-line ()
   (with-temp-buffer
     (paw64-mode)
-    (indent-and-insert "lda #$01")
+    (insert-and-indent "lda #$01")
     (should (string= (with-indent 16 "lda #$01")
                      (current-line-contents)))
     (beginning-of-line)
@@ -39,7 +39,7 @@
 (ert-deftest paw64--indent-instr--from-bol-on-line-with-instr ()
   (with-temp-buffer
     (paw64-mode)
-    (indent-and-insert "lda #$01")
+    (insert-and-indent "lda #$01")
     (beginning-of-line)
     (indent-according-to-mode)
     (should (string= (with-indent 16 "lda #$01")
@@ -50,7 +50,7 @@
     (paw64-mode)
     (insert (with-indent 8 "lda #$ff"))
     (newline)
-    (indent-and-insert "sta #$0400")
+    (insert-and-indent "sta #$0400")
     (should (current-line= (with-indent 8 "sta #$0400")))))
 
 (ert-deftest paw64--indent-at-comment--on-first-line ()
