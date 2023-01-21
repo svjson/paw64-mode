@@ -1,19 +1,20 @@
 
 # Paw64 Mode
 
-`paw64-mode` is the beginnings of an Emacs major mode that provides font-lock(syntax highlighting), column-oriented indentation. 
+`paw64-mode` is the beginnings of an Emacs major mode that provides font-lock(syntax highlighting), column-oriented indentation and shortcuts for assembling and running programs in an emulator.
 
 -----------
 
-This mode is in early stages of development.
+This mode is in an early stage of development, so fasten your seatbelt if you're taking it for a ride.
 
 ## Commands
 
-| Binding | Command                              | Description                                                                                                     |
-| ------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| C-c C-b | Insert Basic Header                  | Insert minimal basic program at $0801 to start program with SYS.                                                |
-| C-c C-c | Assemble current buffer using 64tass | Assemble current buffer (ie, myprogram.asm) to disk (ie, myprogram.prg) in the same folder as the source buffer |
-| C-C C-x | Assemble(64tass) and run (x64)       | Assemble current buffer and launch resulting binary in VICE(x64)                                                |
+| Binding   | Command                              | Description                                                                                                     |
+| --------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| C-c C-b   | Insert Basic Header                  | Insert minimal basic program at $0801 to start program with SYS.                                                |
+| C-c C-c   | Assemble current buffer using 64tass | Assemble current buffer (ie, myprogram.asm) to disk (ie, myprogram.prg) in the same folder as the source buffer |
+| C-C C-x   | Assemble(64tass) and run (x64)       | Assemble current buffer and launch resulting binary in VICE(x64)                                                |
+| C-C C-m u | Untroll/Expand macro                 | Expand macro or generative directive (such as .rept, .for or range())                                             |
 
 ## Indentation
 
@@ -37,6 +38,3 @@ Indentation level for assembly instructions and comments are derived from indent
 
 ### VICE
 [VICE - The Versatile Commodore Emulator](https://vice-emu.sourceforge.io/) is an emulator for Commodore machines, available for virtually all platforms.
-
-
-
