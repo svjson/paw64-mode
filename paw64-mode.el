@@ -1,6 +1,9 @@
 
 (require '64tass)
 (require 'cl-lib)
+(require 'dash)
+(require 'f)
+(require 'subr-x)
 
 (defcustom paw64-indent-level 16
   "Default level of indentation for assembly instructions(opcodes)"
@@ -260,8 +263,112 @@
 
 
 
+(defun paw64-list--extract-lines (list-content line-start line-end)
+  "Extract lines corresponding to source lines between @line-start and @line-end
+   from 64tass Assembly listing output."
+  (interactive)
+  (let ((lines-regex (--> (number-sequence line-start line-end)
+                          (cl-map 'list 'int-to-string it)
+                          (string-join it "\\|")
+                          (concat "^\\(" it "\\)[[:blank:]]"))))
+    (with-temp-buffer
+      (insert list-content)
+      (beginning-of-buffer)
+      (re-search-forward lines-regex)
+      (beginning-of-line)
+      (let* ((pos-start (point))
+             (pos-last-line-number (progn
+                                     (end-of-buffer)
+                                     (re-search-backward lines-regex)
+                                     (end-of-line)
+                                     (point)))
+             (pos-end (progn
+                        (if (re-search-forward "\n[[:digit:]]+[[:blank:]]" (point-max) t)
+                            (progn
+                              (beginning-of-line)
+                              (point))
+                          (progn
+                            pos-last-line-number)))))
+        (--> (buffer-substring-no-properties pos-start pos-end)
+             (split-string it "\n")
+             (seq-filter (lambda (l) (not (string= l ""))) it))))))
+
+(defun paw64-list--parse-line (line)
+  "Parse a single LINE of 64tass Assembly listing.
+Returns an alist with column names"
+  (save-match-data
+    (let* ((columns (split-string line "\t"))
+           (column-value (lambda (n)
+                           (if (string= "" (nth n columns))
+                               nil
+                             (nth n columns))))
+           (address (funcall column-value 1)))
+      `((line-num . ,(funcall column-value 0))
+        (address . ,(when address (substring address 1)))
+        (bin . ,(funcall column-value 2))
+        (monitor . ,(funcall column-value 3))
+        (source . ,(when (> (length columns) 4)
+                     (funcall column-value (- (length columns) 1))))))))
+
+(defun paw64-list--parse-lines (lines)
+  "Parse a list of lines in LINES in 64tass Assembly Listing format."
+  (--> lines
+       (cl-map 'list 'paw64-list--parse-line it)
+       (cl-reduce (lambda (result line)
+                    (append result (list line)))
+                  it
+                  :initial-value '())))
+
+(defun paw64-list--stringify-line (line)
+  "Construct a source string out of LINE alist."
+  (let-alist line
+    (cond
+     ((or (and .source (not .monitor))
+          (and .bin (not .source) (not .monitor)))
+      (concat (s-repeat 16 " ")
+              ".byte "
+              (string-join (cl-map 'list
+                                   (lambda (val) (concat "$" val))
+                                   (split-string .bin " "))
+                           ", ")))
+     (.monitor
+      (concat (s-repeat 16 " ") .monitor))
+
+     (.source
+      .source))))
+
+(defun paw64-list--stringify-lines (lines)
+  "Construct source strings out of list of LINES."
+  (cl-reduce (lambda (result line)
+               (concat result
+                       (paw64-list--stringify-line line)
+                       "\n"))
+             lines
+             :initial-value ""))
+
+(defun paw64-unroll-macro ()
+  "Unroll a macro or generative statement."
+  (interactive)
+  (when (region-active-p)
+    (let* ((line-start (line-number-at-pos (region-beginning)))
+           (line-end (line-number-at-pos (region-end)))
+           (tmp-file (64tass-create-temp-file buffer-file-name))
+           (unrolled-text (-> tmp-file
+                              64tass-export-list
+                              f-read-text
+                              (paw64-list--extract-lines line-start line-end)
+                              (paw64-list--parse-lines)
+                              (paw64-list--stringify-lines))))
+      (delete-region (region-beginning) (region-end))
+      (insert unrolled-text)
+      (delete-directory (file-name-directory tmp-file) t))))
+
+
+
 (defun paw64-compile-and-run-64tass ()
-  "Assembles current buffer using ‘paw64-compile-64tass’ and runs the resulting binary in VICE/x64"
+  "Assemble current buffer using and run the resulting binary in VICE/x64.
+This uses ‘64tass-compile’ from `64tass.el' to produce a PRG file named after
+the buffer and then launching VICE/x64 with it."
   (interactive)
   (when (= 0 (64tass-compile))
     (call-process "x64" nil 0 nil (64tass-target-name))))
@@ -279,6 +386,7 @@
     (define-key map (kbd "C-c C-c") '64tass-compile)
     (define-key map (kbd "C-c C-x") 'paw64-compile-and-run-64tass)
     (define-key map (kbd "C-c C-b") 'paw64-insert-basic-header)
+    (define-key map (kbd "C-c m u") 'paw64-unroll-macro)
     (define-key map (kbd "TAB") 'paw64-indent-for-tab)
 
     map))
