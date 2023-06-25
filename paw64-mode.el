@@ -46,6 +46,11 @@
   :type 'integer
   :group 'languages)
 
+(defcustom paw64-insert-basic-header-comment t
+  "Insert BASIC source comment before basic header."
+  :type 'boolean
+  :group 'languages)
+
 
 
 (defconst paw64-6502-opcode-list '("adc" "anc" "and" "ane" "arr" "asl" "asr" "bcc" "bcs" "beq" "bit" "bmi" "bne"
@@ -291,10 +296,18 @@ containing its corresponding integer value."
 (defun paw64-insert-basic-header ()
   "Insert a basic program to bootstrap machine language program at cursor."
   (interactive)
-  (let ((prog-addr (paw64-to-decimal-string (string-trim (read-string "Enter program start address: ")))))
+  (let* ((input (string-trim (read-string "Enter program start address ($0810): ")))
+         (raw-addr (if (string-empty-p input)
+                       "$0810"
+                     input))
+         (prog-addr (paw64-to-decimal-string raw-addr)))
     (beginning-of-line)
     (insert "*=$0801")
     (newline)
+    (when paw64-insert-basic-header-comment
+      (progn
+        (insert (concat "; 10 SYS " prog-addr))
+        (newline)))
     (insert ".byte $0c, $08, $0a, $00, $9e, $20")
     (newline)
     (insert (concat ".byte " (let ((nums ()))
@@ -304,7 +317,10 @@ containing its corresponding integer value."
                                  (push "$00" nums))
                                (string-join (nreverse nums) ", "))))
     (newline)
-    (newline)))
+    (newline)
+    (insert (concat "*=" raw-addr ))
+    (newline)
+    (paw64-indent-for-tab)))
 
 
 
