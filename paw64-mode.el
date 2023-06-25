@@ -33,8 +33,10 @@
 (require '64tass)
 (require 'cl-lib)
 (require 'dash)
+(require 'etags)
 (require 'f)
 (require 'subr-x)
+(require 'xref)
 
 (defcustom paw64-indent-level 16
   "Default level of indentation for assembly instructions(opcodes)."
@@ -463,6 +465,7 @@ the buffer and then launching VICE/x64 with it."
   (set (make-local-variable 'indent-line-function) 'paw64-indent)
 
   (add-hook 'post-command-hook #'paw64-post-command-hook nil t)
+  (add-hook 'xref-backend-functions #'etags--xref-backend nil t)
   (electric-indent-local-mode -1))
 
 
